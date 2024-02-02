@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/graph"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubectl"
+	k8sUtil "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/util"
@@ -118,6 +119,10 @@ func (i *ImageLoader) LoadImages(ctx context.Context, out io.Writer, localImages
 func (i *ImageLoader) loadImagesInKindNodes(ctx context.Context, out io.Writer, kindCluster string, artifacts []graph.Artifact) error {
 	output.Default.Fprintln(out, "Loading images into kind cluster nodes...")
 	return i.loadImages(ctx, out, artifacts, func(tag string) *exec.Cmd {
+		if k8sUtil.IsPodmanAvailable() {
+			kindArgs := []string{"kind", "load", "image-archive", "--name", kindCluster, "<(podman save " + tag + ")"}
+			return exec.CommandContext(ctx, "/bin/bash", "-c", strings.Join(kindArgs, " "))
+		}
 		return exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, tag)
 	})
 }

@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
+	"sigs.k8s.io/kind/pkg/exec"
 
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/v2/pkg/skaffold/output/log"
@@ -160,4 +161,14 @@ func FailIfClusterIsNotReachable(kubeContext string) error {
 
 	_, err = c.Discovery().ServerVersion()
 	return err
+}
+
+// IsPodmanAvailable checks if podman is available in the system
+func IsPodmanAvailable() bool {
+	cmd := exec.Command("podman", "-v")
+	lines, err := exec.OutputLines(cmd)
+	if err != nil || len(lines) != 1 {
+		return false
+	}
+	return strings.HasPrefix(lines[0], "podman version")
 }
